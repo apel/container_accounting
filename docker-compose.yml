@@ -1,0 +1,13 @@
+# You may have to run chown 1000:1000 on /elastic for this to work
+
+version: '3'
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:5.5.3
+    ports:
+      - 9200:9200
+    volumes:
+      - /elasticsearch-data:/usr/share/elasticsearch/data
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
