@@ -43,7 +43,6 @@ class RancherClient(BaseClient):
         # Get the DockerId to ImageName mapping from the API.
         mapping_record_dict = self.api_parser.get_image_id_mapping()
 
-        record_list = []
         for record in partial_record_list:
             docker_id = record["DockerId"]
 
@@ -71,13 +70,17 @@ class RancherClient(BaseClient):
                 # should be logged.
                 pass
 
-            record_list.append(record)
+            self.elastic.index(index="local_accounting_records",
+                               doc_type='accounting',
+                               id="%s-%s-%s" % (year,
+                                                month,
+                                                docker_id),
+                               body=record)
 
-        return record_list
+            self.elastic.indices.refresh(index="local_accounting_records")
 
 
 if __name__ == "__main__":
 
     CLIENT = RancherClient('/tmp/apel/outgoing')
-    for returned_record in CLIENT.create_records():
-        print returned_record
+    CLIENT.create_records()
