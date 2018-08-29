@@ -3,7 +3,7 @@ from rac import APIParser
 
 AGENT_LOG_PATH = "agent_log.example"
 ELASTIC_HOST = "localhost"
-ELASTIC_PORT = "9200"
+ELASTIC_PORT = 9200
 
 RANCHER_HOST = "localhost"
 RANCHER_PORT = 8080
