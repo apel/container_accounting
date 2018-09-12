@@ -13,3 +13,6 @@ RUN yum -y install python-pip
 
 # Install the python requirements of container_accounting
 RUN pip install -r requirements.txt
+
+# Set PYTHONPATH so Python can import the necessary files at run time. 
+ENV PYTHONPATH=/usr/share/container_accounting
