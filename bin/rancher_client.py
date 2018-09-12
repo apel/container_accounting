@@ -1,31 +1,42 @@
 """This file containes the RancherClient class."""
+from optparse import OptionParser
 
 from elasticsearch import Elasticsearch, NotFoundError
 
 from rac import BaseClient, AgentLogParser, APIParser
 
-AGENT_LOG_PATH = "agent_log.example"
-ELASTIC_HOST = "localhost"
-ELASTIC_PORT = 9200
+try:
+    # Import Python 3 configparser module
+    import configparser
+except ImportError:
+    # Import Python 2 version of the module, but alias it to match the
+    # Python 3 version for simplicities sake later on when using the module.
+    import ConfigParser as configparser
 
-RANCHER_HOST = "localhost"
-RANCHER_PORT = 8080
-RANCHER_API_VERSION = "v1"
 
 class RancherClient(BaseClient):
     """A class to interact with Rancher and produce accounting records."""
 
-    def __init__(self, message_directory):
+    def __init__(self, message_directory, config):
         """Initalise a new RancherClient."""
-        self.agent_log_parser = AgentLogParser(AGENT_LOG_PATH,
-                                               ELASTIC_HOST, ELASTIC_PORT)
 
-        self.api_parser = APIParser(RANCHER_HOST, RANCHER_PORT,
-                                    RANCHER_API_VERSION,
-                                    ELASTIC_HOST, ELASTIC_PORT)
+        elastic_host = config.get('elasticsearch', 'local_host')
+        elastic_port = int(config.get('elasticsearch', 'local_port'))
 
-        self.elastic = Elasticsearch(hosts=[{"host":ELASTIC_HOST,
-                                             "port":ELASTIC_PORT}])
+        rancher_host = config.get('rancher', 'host')
+        rancher_port = int(config.get('rancher', 'port'))
+        rancher_api_version = config.get('rancher', 'api_version')
+        agent_log_path = config.get('rancher', 'agent_log_path')
+
+        self.agent_log_parser = AgentLogParser(agent_log_path,
+                                               elastic_host, elastic_port)
+
+        self.api_parser = APIParser(rancher_host, rancher_port,
+                                    rancher_api_version,
+                                    elastic_host, elastic_port)
+
+        self.elastic = Elasticsearch(hosts=[{"host": elastic_host,
+                                             "port": elastic_port}])
 
         super(RancherClient, self).__init__(message_directory)
 
@@ -82,5 +93,19 @@ class RancherClient(BaseClient):
 
 if __name__ == "__main__":
 
-    CLIENT = RancherClient('/tmp/apel/outgoing')
+    optparse = OptionParser()
+    optparse.add_option('-r', '--rancher_config',
+                        help='location of the rancher.cfg file',
+                        default='/etc/apel/rancher.cfg')
+
+    optparse.add_option('-e', '--elastic_config',
+                        help='location of the elastic.cfg file',
+                        default='/etc/apel/elastic.cfg')
+
+    options, unused_args = optparse.parse_args()
+
+    config = configparser.ConfigParser()
+    config.read([options.elastic_config, options.rancher_config])
+
+    CLIENT = RancherClient('/tmp/apel/outgoing', config)
     CLIENT.create_records()
