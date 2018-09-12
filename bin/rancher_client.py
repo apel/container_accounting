@@ -1,3 +1,5 @@
+#!/usr/bin/env python2
+
 """This file containes the RancherClient class."""
 from optparse import OptionParser
 
