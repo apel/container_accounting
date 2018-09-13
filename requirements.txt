@@ -3,3 +3,6 @@ elasticsearch>=5.0.0,<6.0.0
 parse
 requests
 websocket-client
+# Dependencies for testing
+coveralls
+unittest2
