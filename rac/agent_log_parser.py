@@ -103,8 +103,10 @@ class AgentLogParser(object):
 
                     # Get the most recent record for this container.
                     record = record_object["hits"]["hits"][0]["_source"]
-                    # Make the timestamp a timestamp object for easier timestamp maths.
+                    # Make the text timestamps a timestamp object
+                    # for easier timestamp maths.
                     record["LastSeen"] = datetime.strptime(record["LastSeen"], "%Y-%m-%dT%H:%M:%S")
+                    record["CreationTime"] = datetime.strptime(record["CreationTime"], "%Y-%m-%dT%H:%M:%S")
 
                     current_state = record["Status"]
 
@@ -186,8 +188,10 @@ class AgentLogParser(object):
 
                 # Get the most recent record for this container.
                 record = record_object["hits"]["hits"][0]["_source"]
-                # Make the timestamp a timestamp object for easier timestamp maths.
+                # Make the text timestamps a timestamp object
+                # for easier timestamp maths.
                 record["LastSeen"] = datetime.strptime(record["LastSeen"], "%Y-%m-%dT%H:%M:%S")
+                record["CreationTime"] = datetime.strptime(record["CreationTime"], "%Y-%m-%dT%H:%M:%S")
 
                 record["WallDuration"] += int((new_last_updated - record["LastSeen"]).total_seconds())
                 record["LastSeen"] = new_last_updated
