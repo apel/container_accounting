@@ -99,8 +99,7 @@ class AgentLogParser(object):
                     record_object = self.elastic.search(index="accounting_agent_logs",
                                                         doc_type="accounting",
                                                         body={"query": {"match": {"DockerId": docker_id}}},
-                                                        # TODO: sort may not infact be a arguement to this method.
-                                                        sort='LastSeen')
+                                                        sort='LastSeen:desc')
 
                     # Get the most recent record for this container.
                     record = record_object["hits"]["hits"][0]["_source"]
@@ -185,8 +184,7 @@ class AgentLogParser(object):
                 record_object = self.elastic.search(index="accounting_agent_logs",
                                                     doc_type="accounting",
                                                     body={"query": {"match": {"DockerId": docker_id}}},
-                                                    # TODO: sort may not infact be a arguement to this method.
-                                                    sort='LastSeen')
+                                                    sort='LastSeen:desc')
 
                 # Get the most recent record for this container.
                 record = record_object["hits"]["hits"][0]["_source"]
