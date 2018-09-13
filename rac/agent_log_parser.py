@@ -97,7 +97,8 @@ class AgentLogParser(object):
                 # WallDuration or SuspendDuration.
                 try:
                     record_object = self.elastic.search(index="accounting_agent_logs",
-                                                        body={"query": {"term": {"DockerId": docker_id}}},
+                                                        doc_type="accounting",
+                                                        body={"query": {"match": {"DockerId": docker_id}}},
                                                         # TODO: sort may not infact be a arguement to this method.
                                                         sort='LastSeen')
 
@@ -182,7 +183,8 @@ class AgentLogParser(object):
             # container continues to run until atleast the last log line we parsed.
             for docker_id in currently_running_containers:
                 record_object = self.elastic.search(index="accounting_agent_logs",
-                                                    body={"query": {"term": {"DockerId": docker_id}}},
+                                                    doc_type="accounting",
+                                                    body={"query": {"match": {"DockerId": docker_id}}},
                                                     # TODO: sort may not infact be a arguement to this method.
                                                     sort='LastSeen')
 
