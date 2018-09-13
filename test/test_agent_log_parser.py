@@ -75,6 +75,17 @@ LOG_LINE_TEMPLATE = 'time="%s" level=info msg="rancher id [%s]: Container with d
 # The list should be sorted in ascending time order to ensure the generated
 # log is in ascending time order.
 LOG_DATA = [('2018-01-01T00:00:00Z', '1', 'A', 'started'),
+            # Container B starts
+            ('2018-01-02T01:00:00Z', '2', 'B', 'started'),
+            # Container B stops after an hour.
+            ('2018-01-02T02:00:00Z', '2', 'B', 'deactivated'),
+            # Container B starts again. The time inbetween should count as
+            # SuspendDuration.
+            ('2018-12-31T00:00:00Z', '2', 'B', 'started'),
+            # Container B stops again after another hour. It should not
+            # gain any further SuspendDuration as we cannot be sure it hasn't
+            # been deleted.
+            ('2018-12-31T01:00:00Z', '2', 'B', 'deactivated'),
             ('2018-12-31T23:59:59Z', '1', 'A', 'deactivated')]
 
 # The partial records we expect to be returned from an AgentLogParser, given
@@ -87,6 +98,14 @@ EXPECTED_RESULTS["A"] = {
     'LastSeen': datetime.datetime(2018, 12, 31, 23, 59, 59),
     'WallDuration': 31535999,
     'DockerId': 'A'
+}
+EXPECTED_RESULTS["B"] = {
+    'Status': 'Stopped',
+    'CreationTime': datetime.datetime(2018, 1, 2, 1, 0, 0),
+    'SuspendDuration': 31356000,
+    'LastSeen': datetime.datetime(2018, 12, 31, 1, 0, 0),
+    'WallDuration': 7200,
+    'DockerId': 'B'
 }
 
 if __name__ == "__main__":
