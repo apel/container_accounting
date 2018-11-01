@@ -16,3 +16,10 @@ RUN pip install -r requirements.txt
 
 # Set PYTHONPATH so Python can import the necessary files at run time. 
 ENV PYTHONPATH=/usr/share/container_accounting
+
+# To avoid running the container as root, create an apel user.
+RUN useradd -s /bin/bash apel
+# Allow the apel user to run the container accounting software.
+RUN chown -R apel:apel /usr/share/container_accounting
+# Set the default user of the container to apel.
+USER apel:apel
