@@ -1,3 +1,5 @@
+#!/usr/bin/env python2
+
 """This file contains a small script to save Rancher monitoring data."""
 from rac import APIParser
 
