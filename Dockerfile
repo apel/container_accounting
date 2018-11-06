@@ -23,3 +23,5 @@ RUN useradd -s /bin/bash apel
 RUN chown -R apel:apel /usr/share/container_accounting
 # Set the default user of the container to apel.
 USER apel:apel
+
+ENTRYPOINT ./entrypoint.sh 
