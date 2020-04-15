@@ -85,6 +85,7 @@ def main():
                 doc_type='accounting_data',
                 id=record_id,
                 body=record,
+                refresh=True,
             )
 
 if __name__ == "__main__":
