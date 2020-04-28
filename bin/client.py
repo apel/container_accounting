@@ -2,11 +2,20 @@
 
 from argparse import ArgumentParser
 from configparser import ConfigParser
-from datetime import datetime
+from datetime import timedelta, datetime
+import json
+import logging
 
 from elasticsearch import Elasticsearch
+from elasticsearch import helpers as elasticsearch_helpers
+from elasticsearch import exceptions as elasticsearch_exceptions
 
+import common
+from common.publisher import Publisher
 import without_orchestration
+
+log = logging.getLogger(__name__)
+
 
 def main():
     arguements_parser = ArgumentParser(
@@ -20,6 +29,11 @@ def main():
     arguements_parser.add_argument("--save_monitoring_data",
                                    type=bool,
                                    help="capture monitoring data from an API",
+                                   default=False)
+
+    arguements_parser.add_argument("--send_accounting_data",
+                                   type=bool,
+                                   help="send accounting data to a broker",
                                    default=False)
 
     arguements = arguements_parser.parse_args()
@@ -87,6 +101,52 @@ def main():
                 body=record,
                 refresh=True,
             )
+
+    if arguements.send_accounting_data:
+        # Send data stored in yesterdays index.
+        yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y.%m.%d")
+
+        # Get the site name from the config file to add to records later.
+        site_name = config.get("infrastructure", "site_name")
+
+        # The elasticsearch API enforces paging, so use an helper function
+        # which returns a generator. Errors like no index matching the one
+        # provided only manifest when trying to use that generator.
+        print("%s-%s" % (elastic_index, yesterday))
+        raw_records_generator = elasticsearch_helpers.scan(
+            elastic_client,
+            index="%s-%s" % (elastic_index, yesterday),
+        )
+
+        # Create a message object to later send.
+        # Use copy to avoid pass by reference issues.
+        message = common.CONTAINER_USAGE_EMPTY_MESSAGE.copy()
+
+        try:
+            for raw_record in raw_records_generator:
+                record = raw_record["_source"]
+                record["Site"] = site_name
+                message["UsageRecords"].append(record)
+        # Possible cause of this exception is no index matching the one
+        # provided to the generator.
+        except elasticsearch_exceptions.NotFoundError:
+            log.error("No records for yesterday.")
+
+        # Get broker options from config file.
+        host = config.get("broker", "host")
+        port = config.getint("broker", "port")
+        virtual_host = config.get("broker", "virtual_host")
+        queue = config.get("broker", "queue")
+        username = config.get("broker", "username")
+        password = config.get("broker", "password")
+
+        sender = Publisher(host, port, virtual_host, queue, username, password)
+
+        # Can't send a dictionary, so convert to a string.
+        string_message = json.dumps(message)
+        sender.send(string_message)
+        sender.close()
+
 
 if __name__ == "__main__":
     main()
