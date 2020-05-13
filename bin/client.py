@@ -6,12 +6,21 @@ from datetime import timedelta, datetime
 import json
 import logging
 import requests
+import sys
 
 import common
 from common.publisher import Publisher
 import without_orchestration
 
-log = logging.getLogger(__name__)
+root_log = logging.getLogger()
+root_log.setLevel(logging.INFO)
+ch = logging.StreamHandler(sys.stdout)
+fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+formatter = logging.Formatter(fmt)
+ch.setFormatter(formatter)
+root_log.addHandler(ch)
+log = logging.getLogger("client")
+logging.getLogger("pika").setLevel(logging.WARNING)
 
 
 def main():
@@ -97,6 +106,8 @@ def main():
                 "%s/%s/%s/%s?refresh" % (elastic_url, index, doc_type, id),
                 data=record
             )
+
+            log.info("Updated data for record: %s" % record_id)
 
     if arguements.send_accounting_data:
         # Determine yesterdays index to send that data.
