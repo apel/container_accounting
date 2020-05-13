@@ -5,10 +5,7 @@ from configparser import ConfigParser
 from datetime import timedelta, datetime
 import json
 import logging
-
-from elasticsearch import Elasticsearch
-from elasticsearch import helpers as elasticsearch_helpers
-from elasticsearch import exceptions as elasticsearch_exceptions
+import requests
 
 import common
 from common.publisher import Publisher
@@ -58,11 +55,7 @@ def main():
     else:
         elastic_prefix = "http"
 
-    # Create an elasticsearch client object to write/read data.
-    elastic_client = Elasticsearch(
-            hosts=[{"host:": "%s://%s" % (elastic_prefix, elastic_host),
-                    "port": elastic_port}]
-    )
+    elastic_url = "%s://%s:%s" % (elastic_prefix, elastic_host, elastic_port)
 
     if arguements.save_monitoring_data:
         # Get the of details the API to fetch monitoring data from.
@@ -92,45 +85,54 @@ def main():
             # day.
             record_id = "%s-%s" % (record["DockerId"], measurement_day)
 
-            # Save the record, this will override previous records with the
-            # same id.
-            elastic_client.index(
-                index="%s-%s" % (elastic_index, measurement_day),
-                doc_type='accounting_data',
-                id=record_id,
-                body=record,
-                refresh=True,
+            # Save the record, this will intentionally override previous
+            # records with the same id.
+            # We use requests rather than the elasticsearch python client
+            # because it seems the elastic client doesn't handle talking from
+            # one container to another.
+            index = "%s-%s" % (elastic_index, measurement_day)
+            doc_type = 'accounting_data'
+            id = record_id
+            requests.put(
+                "%s/%s/%s/%s?refresh" % (elastic_url, index, doc_type, id),
+                data=record
             )
 
     if arguements.send_accounting_data:
-        # Send data stored in yesterdays index.
+        # Determine yesterdays index to send that data.
         yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y.%m.%d")
+        index = "%s-%s" % (elastic_index, yesterday)
 
         # Get the site name from the config file to add to records later.
         site_name = config.get("infrastructure", "site_name")
 
-        # The elasticsearch API enforces paging, so use an helper function
-        # which returns a generator. Errors like no index matching the one
-        # provided only manifest when trying to use that generator.
-        print("%s-%s" % (elastic_index, yesterday))
-        raw_records_generator = elasticsearch_helpers.scan(
-            elastic_client,
-            index="%s-%s" % (elastic_index, yesterday),
-        )
+        # The elasticsearch API enforces paging.
+        # We page manually because it seems the elastic client doesn't handle
+        # talking from one container to another.
+        # Work out the total number of hits to expect.
+        total_hits_url = "%s/%s/_search?size=0" % (elastic_url, index)
+        response_total_hits = requests.get(total_hits_url).json()
+        total_hits = response_total_hits["hits"]["total"]
+
+        # Do the paging.
+        fetched_records = []
+        while len(fetched_records) < total_hits:
+            paged_url = "%s/%s/_search?from=%s" % (elastic_url,
+                                                   index,
+                                                   len(fetched_records))
+
+            paged_response = requests.get(paged_url).json()
+            fetched_records = fetched_records + paged_response["hits"]["hits"]
 
         # Create a message object to later send.
         # Use copy to avoid pass by reference issues.
         message = common.CONTAINER_USAGE_EMPTY_MESSAGE.copy()
 
-        try:
-            for raw_record in raw_records_generator:
-                record = raw_record["_source"]
-                record["Site"] = site_name
-                message["UsageRecords"].append(record)
-        # Possible cause of this exception is no index matching the one
-        # provided to the generator.
-        except elasticsearch_exceptions.NotFoundError:
-            log.error("No records for yesterday.")
+        # Add the site to each record.
+        for record in fetched_records:
+            record["Site"] = site_name
+
+        message["UsageRecords"] = fetched_records
 
         # Get broker options from config file.
         host = config.get("broker", "host")
