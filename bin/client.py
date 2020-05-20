@@ -102,10 +102,27 @@ def main():
             index = "%s-%s" % (elastic_index, measurement_day)
             doc_type = 'accounting_data'
             id = record_id
-            requests.put(
-                "%s/%s/%s/%s?refresh" % (elastic_url, index, doc_type, id),
-                data=record
+
+            # Before writing to elasticsearch via requests, we must convert the
+            # @timestamp field so it's not a datatime object else json.dumps()
+            # fails.
+            record["@timestamp"] = record["@timestamp"].isoformat()
+
+            full_put_url = "%s/%s/%s/%s?refresh" % (elastic_url, index, doc_type, id)
+            log.debug("Attempting to write data to %s" % full_put_url)
+            log.debug("Attempting to write %s" % record)
+
+            response = requests.put(
+                full_put_url,
+                data=json.dumps(record),
+                headers={
+                    'Content-Type': 'application/json',
+                }
             )
+
+            if response.status_code != 200:
+                log.error("Error %s saving to elasticsearch: %s" % (response.status_code, response.text))
+                sys.exit(1)
 
             log.info("Updated data for record: %s" % record_id)
 
@@ -121,9 +138,13 @@ def main():
         # We page manually because it seems the elastic client doesn't handle
         # talking from one container to another.
         # Work out the total number of hits to expect.
-        total_hits_url = "%s/%s/_search?size=0" % (elastic_url, index)
-        response_total_hits = requests.get(total_hits_url).json()
-        total_hits = response_total_hits["hits"]["total"]
+        try:
+            total_hits_url = "%s/%s/_search?size=0" % (elastic_url, index)
+            response_total_hits = requests.get(total_hits_url).json()
+            total_hits = response_total_hits["hits"]["total"]
+        except KeyError:
+            log.error("Could not find number of total hits from %s" % total_hits_url)
+            sys.exit(1)
 
         # Do the paging.
         fetched_records = []
