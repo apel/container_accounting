@@ -120,7 +120,7 @@ def main():
                 }
             )
 
-            if response.status_code != 200:
+            if response.status_code not in [200, 201]:
                 log.error("Error %s saving to elasticsearch: %s" % (response.status_code, response.text))
                 sys.exit(1)
 
