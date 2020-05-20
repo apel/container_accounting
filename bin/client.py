@@ -154,7 +154,8 @@ def main():
                                                    len(fetched_records))
 
             paged_response = requests.get(paged_url).json()
-            fetched_records = fetched_records + paged_response["hits"]["hits"]
+            for single_result in paged_response["hits"]["hits"]:
+                fetched_records.append(single_result["_source"])
 
         # Create a message object to later send.
         # Use copy to avoid pass by reference issues.
