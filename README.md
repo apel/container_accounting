@@ -22,29 +22,29 @@ To run the container accounting collector
         |__ client.cfg
 ```
 
-1. Pull the latest images.
+2. Pull the latest images.
 ```
 docker-compose.yml pull
 ```
 
-1. Make a directory to persistently store your elasticsearch data.
+3. Make a directory to persistently store your elasticsearch data.
 ```
 mkdir ./elasticsearch-data
 ```
 
-1. Make the directory owned by the elasticsearch user used by the container process.
+4. Make the directory owned by the elasticsearch user used by the container process.
 ```
 chown 1000:1000 ./elasticsearch-data
 ```
 
-1. Edit `conf/client.cfg`
+5. Edit `conf/client.cfg`
   * set `site_name` to a meaningful, human readable, identifier for your site. This will be visible in the accounting dashboard.
   * set the broker details.
 
-1. Edit `docker-compose.yml` to suit your exact deployment
+6. Edit `docker-compose.yml` to suit your exact deployment
   * You'll need to replace `./conf/client.cfg` with the absolute path.
 
-1. Run the three containers
+7. Run the three containers
 ```
 docker-compose up -d container_accounting_elasticsearch
 docker-compose up -d container_accounting_cadvisor
@@ -52,4 +52,4 @@ docker-compose up -d container_accounting_cadvisor
 docker-compose up -d container_accounting_apel
 ```
 
-1. You should see data in the accounting dashboard within 24 hours.
+8. You should see data in the accounting dashboard within 24 hours.
