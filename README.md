@@ -14,7 +14,7 @@ The APEL container:
 ## Running the container accounting collector
 
 To run the container accounting collector
-1. Make sure you have the latest versions of the [docker-compose.yml]() file and the [client.cfg file](). Further instructions will assume a directory structre as follows
+1. Make sure you have the latest versions of the [docker-compose.yml](docker-compose.yml) file and the [client.cfg](conf/client.cfg) file. Further instructions will assume a directory structre as follows
 ```
     .
     |__ docker-compose.yml
