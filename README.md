@@ -46,10 +46,10 @@ chown 1000:1000 ./elasticsearch-data
 
 7. Run the three containers
 ```
-docker-compose up -d container_accounting_elasticsearch
-docker-compose up -d container_accounting_cadvisor
+docker-compose up -d elasticsearch
+docker-compose up -d cadvisor
 # At this points it's prudent to wait 1 minute and ensure the elasticsearch cluster is up and running by checking port 9200.
-docker-compose up -d container_accounting_apel
+docker-compose up -d apel
 ```
 
 8. You should see data in the accounting dashboard within 24 hours.
