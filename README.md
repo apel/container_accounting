@@ -48,7 +48,7 @@ chown 1000:1000 ./elasticsearch-data
 ```
 docker-compose up -d elasticsearch
 docker-compose up -d cadvisor
-# At this points it's prudent to wait 1 minute and ensure the elasticsearch cluster is up and running by checking port 9200.
+# At this points it's prudent to wait 2 minute and ensure the elasticsearch cluster is up and running by checking port 9200.
 docker-compose up -d apel
 ```
 
