@@ -24,7 +24,7 @@ To run the container accounting collector
 
 2. Pull the latest images.
 ```
-docker-compose.yml pull
+docker-compose pull
 ```
 
 3. Make a directory to persistently store your elasticsearch data.
