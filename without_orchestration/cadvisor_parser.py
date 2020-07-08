@@ -42,6 +42,9 @@ class CadvisorParser():
         for running_container in response_data.values():
             container_info = {}
 
+            # The creation time of the container.
+            container_info["CreationTime"] = running_container["spec"]["creation_time"]
+
             container_info["@timestamp"] = datetime.now()
             container_info["DockerId"] = running_container["id"]
 
