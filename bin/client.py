@@ -88,27 +88,55 @@ def main():
             # Determine which elasticsearch index to store the data in based
             # off of the records timestamp.
             measurement_day = record["@timestamp"].strftime("%Y.%m.%d")
+            index = "%s-%s" % (elastic_index, measurement_day)
 
-            # Ensure we only keep the latest data point per container per day
-            # by creating a record ID from the docker ID and the measurement
-            # day.
-            record_id = "%s-%s" % (record["DockerId"], measurement_day)
+            # Check that this new record does not decrease any reported usage.
+            # To do this, we need to search the index for the docker ID.
+            docker_id = record["DockerId"]
+            existing_record = _es_find(
+                elastic_url, index, "DockerId", docker_id
+            )
+
+            # If an existing record was found
+            if existing_record:
+                # Look for a drop in reported usage.
+                for resource in ["CpuDuration", "StorageUsed",
+                                 "NetworkInbound", "NetworkOutbound"]:
+                    # If it does, we want to seperate it from previous records
+                    # for this container to prevent any usage going unreported.
+                    if existing_record[resource] > record[resource]:
+                        print("NEW INSTANCE")
+                        record["Instance"] = existing_record["Instance"] + 1
+                        # No need to keep checking different resoucres if one
+                        # has decreased.
+                        break
+                    else:
+                        # Assume the same instance as before.
+                        # This may intentionally get overwritten when we check
+                        # a different resource as part of the for loop.
+                        record["Instance"] = existing_record["Instance"]
+
+            else:
+                # Mark this record as the first "instance" of the container id
+                record["Instance"] = 1
+
+            # Construct a (local) document id to save this record under.
+            record_id = "%s-%s-%s" % (
+                record["DockerId"], measurement_day, record["Instance"]
+            )
+
+            # Before writing to elasticsearch, we must convert the @timestamp
+            # field so it's not a datatime object else json.dumps() fails.
+            record["@timestamp"] = record["@timestamp"].isoformat()
 
             # Save the record, this will intentionally override previous
             # records with the same id.
-            # We use requests rather than the elasticsearch python client
-            # because it seems the elastic client doesn't handle talking from
-            # one container to another.
-            index = "%s-%s" % (elastic_index, measurement_day)
             doc_type = 'accounting_data'
-            id = record_id
 
-            # Before writing to elasticsearch via requests, we must convert the
-            # @timestamp field so it's not a datatime object else json.dumps()
-            # fails.
-            record["@timestamp"] = record["@timestamp"].isoformat()
+            full_put_url = "%s/%s/%s/%s?refresh" % (
+                elastic_url, index, doc_type, record_id
+            )
 
-            full_put_url = "%s/%s/%s/%s?refresh" % (elastic_url, index, doc_type, id)
             log.debug("Attempting to write data to %s" % full_put_url)
             log.debug("Attempting to write %s" % record)
 
@@ -181,6 +209,70 @@ def main():
         string_message = json.dumps(message)
         sender.send(string_message)
         sender.close()
+
+
+def _es_find(node, index, field, term):
+    """
+    Return the newest document that contain an exact term in a provided field.
+
+    Return {} if no document found via searching the supplied node and index.
+    """
+    # First query if the index exists.
+    head_url = node + "/" + index
+    head_response = requests.head(head_url)
+    if head_response.status_code == 404:
+        # Maybe the index simply doesn't exist yet.
+        log.debug("Could not find index: %s" % head_url)
+        return {}
+
+    elif head_response.status_code != 200:
+        # If we don't get a 200, an unexpected error has occured.
+        log.error("Unexpected error finding index: %s" % head_url)
+        sys.exit(1)
+
+    # We can asusme the index exists and proceed constructing our query data
+    # and headers.
+    data = {
+        "query": {
+            "term": {
+                field: term
+            }
+        },
+        "sort": [
+            {
+                "@timestamp": {
+                    "order": "desc",
+                }
+            }
+        ],
+        "size": 1,
+    }
+
+    headers = {
+        "Content-Type": "application/json",
+    }
+
+    search_url = node + "/" + index + "/_search"
+    search_response = requests.get(
+        search_url, headers=headers, data=json.dumps(data)
+    )
+
+    search_response_json = json.loads(search_response.text)
+    search_hit_list = search_response_json["hits"]["hits"]
+
+    if len(search_hit_list) == 0:
+        log.debug(
+            "No results found for %s %s %s %s", node, index, field, term
+        )
+        return {}
+
+    if len(search_hit_list) > 1:
+        log.error(
+            "Too many results found for %s %s %s %s", node, index, field, term
+        )
+        sys.exit(1)
+
+    return search_hit_list[0]["_source"]
 
 
 if __name__ == "__main__":
