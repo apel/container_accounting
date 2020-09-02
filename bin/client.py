@@ -7,6 +7,7 @@ import json
 import logging
 import requests
 import sys
+import time
 
 import common
 from common.publisher import Publisher
@@ -219,19 +220,42 @@ def _es_find(node, index, field, term):
     """
     # First query if the index exists.
     head_url = node + "/" + index
-    head_response = requests.head(head_url)
-    if head_response.status_code == 404:
-        # Maybe the index simply doesn't exist yet.
-        log.debug("Could not find index: %s" % head_url)
-        return {}
+    max_attempts = 5
 
-    elif head_response.status_code != 200:
-        # If we don't get a 200, an unexpected error has occured.
-        log.error("Unexpected error finding index: %s" % head_url)
-        sys.exit(1)
+    for attempt in range(1, max_attempts+1):
+        log.debug("Attempt number: %i", attempt)
+        try:
+            head_response = requests.head(head_url)
+        except requests.exceptions.ConnectionError:
+            log.info(
+                "A connection error occured with %s, %s, %s, %s.",
+                node, index, field, term
+            )
+            head_response = None  # To be handled later
 
-    # We can asusme the index exists and proceed constructing our query data
-    # and headers.
+        if head_response is None or head_response.status_code == 404:
+            # Then we haven't found the index, there are two possible causes.
+            # 1. The index truly does not exist.
+            if attempt == max_attempts:
+                log.info("Repeatedly could not find index at: %s" % head_url)
+                log.info("index probably doesnt exist")
+                return {}
+            # 2. The elasticsearch node is still starting up and can't serve
+            #    the index just yet. In this case, we simply want to wait and
+            #    try again.
+            time.sleep(2**attempt)
+            continue
+        elif head_response.status_code == 200:
+            # Then the rest of the while loop can continue.
+            break
+        else:
+            # If we don't get a 200, a 404 or a connection error, then an
+            # unexpected error has occured.
+            log.error("Unexpected error finding index: %s" % head_url)
+            sys.exit(1)
+
+    # Now, we can asusme the index exists and proceed constructing our query
+    # data and headers.
     data = {
         "query": {
             "term": {
