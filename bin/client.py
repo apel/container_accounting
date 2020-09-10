@@ -101,8 +101,8 @@ def main():
             # If an existing record was found
             if existing_record:
                 # Look for a drop in reported usage.
-                for resource in ["CpuDuration", "StorageUsed",
-                                 "NetworkInbound", "NetworkOutbound"]:
+                for resource in ["CpuDuration", "NetworkInbound",
+                                 "NetworkOutbound"]:
                     # If it does, we want to seperate it from previous records
                     # for this container to prevent any usage going unreported.
                     if existing_record[resource] > record[resource]:
