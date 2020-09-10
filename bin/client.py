@@ -106,7 +106,6 @@ def main():
                     # If it does, we want to seperate it from previous records
                     # for this container to prevent any usage going unreported.
                     if existing_record[resource] > record[resource]:
-                        print("NEW INSTANCE")
                         record["Instance"] = existing_record["Instance"] + 1
                         # No need to keep checking different resoucres if one
                         # has decreased.
