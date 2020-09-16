@@ -86,13 +86,10 @@ def main():
         monitoring_data = api_parser.parse_monitoring_data()
 
         for record in monitoring_data:
-            # Determine which elasticsearch index to store the data in based
-            # off of the records timestamp.
-            measurement_day = record["@timestamp"].strftime("%Y.%m.%d")
-            index = "%s-%s" % (elastic_index, measurement_day)
-
-            # Check that this new record does not decrease any reported usage.
-            # To do this, we need to search the index for the docker ID.
+            # Check that this new record does not decrease any previously
+            # reported usage. To do this, we need to search all previous
+            # indices for the docker ID.
+            index = "%s-*" % (elastic_index)
             docker_id = record["DockerId"]
             existing_record = _es_find(
                 elastic_url, index, "DockerId", docker_id
@@ -119,6 +116,11 @@ def main():
             else:
                 # Mark this record as the first "instance" of the container id
                 record["Instance"] = 1
+
+            # Determine which elasticsearch index to store the data in based
+            # off of the records timestamp.
+            measurement_day = record["@timestamp"].strftime("%Y.%m.%d")
+            index = "%s-%s" % (elastic_index, measurement_day)
 
             # Construct a (local) document id to save this record under.
             record_id = "%s-%s-%s" % (
