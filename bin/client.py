@@ -157,8 +157,8 @@ def main():
             log.info("Updated data for record: %s" % record_id)
 
     if arguements.send_accounting_data:
-        # For quick results during testing, yesterday is infact today.
-        yesterday = datetime.now().strftime("%Y.%m.%d")
+        # Determine yesterdays index to send that data.
+        yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y.%m.%d")
         index = "%s-%s" % (elastic_index, yesterday)
 
         # Get the site name from the config file to add to records later.

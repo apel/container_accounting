@@ -20,8 +20,6 @@ do
     if [ $minute != $new_minute ]; then
       # Save monitoring data.
       python3 bin/client.py -c conf/client.cfg --save_monitoring_data True
-      # For testing, send accounting data a lot.
-      python3 bin/client.py -c conf/client.cfg --send_accounting_data True
       minute=$new_minute
     fi
 
