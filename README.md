@@ -2,14 +2,12 @@
 
 The below documentation assumes deploying the entire system as docker containers. Other deployment methods (such as using non-containerized versions of the software) is theoretically possible, but not supported.
 
-Running the container accounting collector involves running three containers.
-1. elasticsearch 6.8.6
+Running the container accounting collector involves running two containers.
 1. cAdvisor 0.35.0
 1. an APEL container
 
 The APEL container:
-* Periodically and frequently polls the cAdvisor API to "monitor" the running containers, storing one measurement per container per day in elasticsearch.
-* Periodically sends this data to a central server. 
+* Periodically and frequently polls the cAdvisor API to "monitor" the running containers, storing one measurement per container per day in a remote elasticsearch.
 
 ## Running the container accounting collector
 
@@ -27,29 +25,18 @@ To run the container accounting collector
 docker-compose pull
 ```
 
-3. Make a directory to persistently store your elasticsearch data.
-```
-mkdir ./elasticsearch-data
-```
-
-4. Make the directory owned by the elasticsearch user used by the container process.
-```
-chown 1000:1000 ./elasticsearch-data
-```
-
-5. Edit `conf/client.cfg`
+3. Edit `conf/client.cfg`
   * set `site_name` to a meaningful, human readable, identifier for your site. This will be visible in the accounting dashboard.
-  * set the broker details.
+  * set the elasticsearch url
 
-6. Edit `docker-compose.yml` to suit your exact deployment
+4. Edit `docker-compose.yml` to suit your exact deployment
   * You'll need to replace `./conf/client.cfg` with the absolute path.
+  * You'll need to replace `/path/to/certificates` with the correct path to a downloaded copy of the UK eScience CA root and intermediate certificates (available here: http://ngs.ac.uk/ukca/certificates/cacerts.html)
 
-7. Run the three containers
+5. Run the two containers
 ```
-docker-compose up -d elasticsearch
 docker-compose up -d cadvisor
-# At this points it's prudent to wait 2 minute and ensure the elasticsearch cluster is up and running by checking port 9200.
 docker-compose up -d apel
 ```
 
-8. You should see data in the accounting dashboard within 24 hours.
+6. You should see data in the accounting dashboard within minutes.
