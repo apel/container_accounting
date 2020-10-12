@@ -10,8 +10,10 @@ set -eu
 
 while true
 do
-    # Publish
     python3 bin/client.py -c conf/client.cfg
+    # Store the return code of the python command in a file to reference
+    # in the containers health check function.
+    echo $? > status.txt
     # Wait the configured time before publishing again.
     sleep $PUBLISH_FREQUENCY
 done
