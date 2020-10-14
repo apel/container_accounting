@@ -84,9 +84,21 @@ def main():
 
     for record in monitoring_data:
         # Check that this new record does not decrease any previously
-        # reported usage. To do this, we need to search all previous
-        # indices for the docker ID.
-        index = "%s-*" % (elastic_index)
+        # reported usage. To do this, we need to search previous indices for
+        # the docker ID. To prevent overwhelming elasticsearch, we limit this
+        # search to the previous and current month.
+        now = datetime.now()
+        current_year_month = now.strftime("%Y.%m")
+        previous_year_month = now.replace(
+            year=now.year if now.month > 1 else now.year - 1,
+            month=now.month - 1 if now.month > 1 else 12,
+        ).strftime("%Y.%m")
+
+        index = "%s-%s.*,%s-%s.*" % (
+            elastic_index, current_year_month,
+            elastic_index, previous_year_month
+        )
+
         docker_id = record["DockerId"]
         existing_record = _es_find(
             elastic_session, elastic_url, index, "DockerId", docker_id
