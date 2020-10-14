@@ -6,8 +6,6 @@
 # much you are happy to risk loosing, as the monitoring data
 # can disappear when the container it corresponds to is deleted.
 
-set -eu
-
 while true
 do
     python3 bin/client.py -c conf/client.cfg
