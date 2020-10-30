@@ -6,6 +6,17 @@ COPY . /usr/share/container_accounting
 # Then set /usr/share/container_accounting as the working directory
 WORKDIR /usr/share/container_accounting
 
+# Bake in the UK e-Science Root so the container can verify who it is sending
+# data to.
+# First install wget and openssl to facilitate that.
+RUN yum -y install wget openssl
+# Make a directory to store the certificate.
+RUN mkdir -p /etc/grid-security/certificates
+# Get the der formated certificate.
+RUN wget -O /etc/grid-security/certificates/UKeScienceRoot.der https://cert.ca.ngs.ac.uk/escience-root.cer
+# Convert to a PEM file.
+RUN openssl x509 -inform der -in /etc/grid-security/certificates/UKeScienceRoot.der -out /etc/grid-security/certificates/UKeScienceRoot-baked.pem
+
 # Get python3
 RUN yum -y install python3
 

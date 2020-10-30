@@ -5,7 +5,6 @@ services:
     image: gregcorbett/container_accounting_collector
     volumes:
       - ./conf/client.cfg:/usr/share/container_accounting/conf/client.cfg:ro
-      - /path/to/certificates:/etc/grid-security/certificates:ro
     environment:
       # Increase/decrease the delay (in seconds) between successive runs by
       # increasing/decreasing the value of PUBLISH_FREQUENCY.
