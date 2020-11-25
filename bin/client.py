@@ -59,7 +59,7 @@ def main():
     # Does the elasticsearch cluster support/require SSL?
     if elastic_use_ssl:
         elastic_prefix = "https"
-        elastic_session.verify = "/etc/grid-security/certificates"
+        elastic_session.verify = "/etc/grid-security/certificates/"
     else:
         elastic_prefix = "http"
 
