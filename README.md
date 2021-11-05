@@ -31,7 +31,6 @@ docker-compose pull
 
 4. Edit `docker-compose.yml` to suit your exact deployment
   * You'll need to replace `./conf/client.cfg` with the absolute path.
-  * You'll need to replace `/path/to/certificates` with the correct path to a downloaded copy of the UK eScience CA root and intermediate certificates (available here: http://www.ngs.ac.uk/ukca/certificates/cacerts.html)
 
 5. Run the two containers
 ```
