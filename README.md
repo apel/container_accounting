@@ -39,4 +39,4 @@ docker-compose up -d cadvisor
 docker-compose up -d apel
 ```
 
-6. You should see data in the accounting dashboard within minutes.
+6. You should start see data in the accounting dashboard within minutes, although it will take 24 hours for some charts to update.
