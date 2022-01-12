@@ -2,7 +2,7 @@ version: '3'
 services:
   apel:
     container_name: container_accounting_apel
-    image: gregcorbett/container_accounting_collector
+    image: stfc/container_accounting_collector
     volumes:
       - ./conf/client.cfg:/usr/share/container_accounting/conf/client.cfg:ro
     environment:
