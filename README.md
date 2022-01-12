@@ -31,6 +31,7 @@ docker-compose pull
 
 4. Edit `docker-compose.yml` to suit your exact deployment
   * You'll need to replace `./conf/client.cfg` with the absolute path.
+  * Possibly edit PUBLISH_FREQUENCY. This is the delay (in seconds) between runs of the accounting client and should correspond to how much accounting data you are happy to risk loosing. If a container is stopped between runs of the accounting client, the final resource usage for that container may not get accounted for.
 
 5. Run the two containers
 ```
